@@ -1,9 +1,8 @@
 // +build linux
 
-package main
+package cpu
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -63,8 +62,6 @@ func Cpu_times() (*CpuTimes, error) {
 					stat.GuestNice = float64(v) / clock_ticks
 				}
 			}
-		} else {
-			continue
 		}
 
 	}
@@ -81,8 +78,5 @@ func get_clock_ticks() float64 {
 
 func init() {
 
-	fmt.Printf("Init cpu_linux\n")
-
 	clock_ticks = get_clock_ticks()
-	fmt.Printf("%v\n", clock_ticks)
 }
