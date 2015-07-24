@@ -69,7 +69,7 @@ func Cpu_times() (*CpuTimes, error) {
 	return &stat, nil
 }
 
-func get_clock_ticks() float64 {
+func GetClockTicks() float64 {
 
 	var sc_clk_tck C.long
 	sc_clk_tck = C.sysconf(C._SC_CLK_TCK)
@@ -78,5 +78,5 @@ func get_clock_ticks() float64 {
 
 func init() {
 
-	clock_ticks = get_clock_ticks()
+	clock_ticks = GetClockTicks()
 }
