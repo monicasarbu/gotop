@@ -1,4 +1,4 @@
-package main
+package load
 
 type LoadStat struct {
 	Load1  float64

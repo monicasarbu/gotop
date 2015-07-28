@@ -5,11 +5,15 @@ import (
 	"time"
 
 	"github.com/monicasarbu/gotop/cpu"
+	"github.com/monicasarbu/gotop/load"
 	"github.com/monicasarbu/gotop/mem"
 	"github.com/monicasarbu/gotop/proc"
 )
 
 func main() {
+
+	l, _ := load.Load()
+	fmt.Printf("Load: %.2f %.2f %.2f\n", l.Load1, l.Load5, l.Load15)
 
 	stat2, _ := cpu.Cpu_times_percent(1 * time.Second)
 	fmt.Printf("%%Cpu: %s\n", stat2.String())
