@@ -24,7 +24,8 @@ var _last_cpu_times *CpuTimes
 
 func (t *CpuTimes) String() string {
 
-	return fmt.Sprintf("%.2f user, %.2f system, %.2f nice, %.2f iddle, %.2f steal", t.User, t.System, t.Nice, t.Idle, t.Steal)
+	return fmt.Sprintf("%.2f user, %.2f system, %.2f nice, %.2f iddle, %.2f iowait, %.2f irq, %.2f softirq, %.2f steal",
+		t.User, t.System, t.Nice, t.Idle, t.IOWait, t.IRQ, t.SoftIRQ, t.Steal)
 }
 
 func (t *CpuTimes) sum() float64 {
