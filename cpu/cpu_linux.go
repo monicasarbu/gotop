@@ -17,7 +17,11 @@ import (
 */
 import "C"
 
-var clock_ticks float64
+type ClockTicks struct {
+	Value float64
+}
+
+var clock_ticks *ClockTicks
 
 func parseCpuTimes(b []byte) (*CpuTimes, error) {
 
@@ -40,25 +44,25 @@ func parseCpuTimes(b []byte) (*CpuTimes, error) {
 			v, _ := strconv.ParseUint(fields[i], 10, 64)
 			switch i {
 			case 1:
-				stat.User = float64(v) / clock_ticks
+				stat.User = float64(v) / GetClockTicks()
 			case 2:
-				stat.Nice = float64(v) / clock_ticks
+				stat.Nice = float64(v) / GetClockTicks()
 			case 3:
-				stat.System = float64(v) / clock_ticks
+				stat.System = float64(v) / GetClockTicks()
 			case 4:
-				stat.Idle = float64(v) / clock_ticks
+				stat.Idle = float64(v) / GetClockTicks()
 			case 5:
-				stat.IOWait = float64(v) / clock_ticks
+				stat.IOWait = float64(v) / GetClockTicks()
 			case 6:
-				stat.IRQ = float64(v) / clock_ticks
+				stat.IRQ = float64(v) / GetClockTicks()
 			case 7:
-				stat.SoftIRQ = float64(v) / clock_ticks
+				stat.SoftIRQ = float64(v) / GetClockTicks()
 			case 8:
-				stat.Steal = float64(v) / clock_ticks
+				stat.Steal = float64(v) / GetClockTicks()
 			case 9:
-				stat.Guest = float64(v) / clock_ticks
+				stat.Guest = float64(v) / GetClockTicks()
 			case 10:
-				stat.GuestNice = float64(v) / clock_ticks
+				stat.GuestNice = float64(v) / GetClockTicks()
 			}
 		}
 
@@ -78,14 +82,21 @@ func Cpu_times() (*CpuTimes, error) {
 	return parseCpuTimes(b)
 }
 
-func GetClockTicks() float64 {
+func InitClockTicks() {
 
 	var sc_clk_tck C.long
 	sc_clk_tck = C.sysconf(C._SC_CLK_TCK)
-	return float64(sc_clk_tck)
+	clock_ticks = &ClockTicks{Value: float64(sc_clk_tck)}
 }
 
-func init() {
+func GetClockTicks() float64 {
 
-	clock_ticks = GetClockTicks()
+	if clock_ticks == nil {
+		InitClockTicks()
+	}
+	return clock_ticks.Value
+}
+
+func SetClockTicks(c float64) {
+	clock_ticks = &ClockTicks{Value: c}
 }

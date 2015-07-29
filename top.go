@@ -33,9 +33,19 @@ func main() {
 
 	for _, pid := range pids {
 		process := &proc.Process{Pid: pid}
+		process.LoadProcStat()
 		fmt.Printf("Pid: %d\n", process.Pid)
+		fmt.Printf("PPid: %d\n", process.Ppid())
 		fmt.Printf("Name: %s\n", process.Name())
-		fmt.Printf("Cpu: %s\n", process.Cpu_times())
-		fmt.Printf("Mem: %s\n", process.Memory_info())
+		fmt.Printf("Status: %s\n", process.Status())
+
+		utime, stime := process.Cpu_times()
+		fmt.Printf("Cpu: %.2f utime, %.2f stime\n", utime, stime)
+
+		vms, rss := process.Memory_info()
+		fmt.Printf("Mem: %v vms, %v rss\n", vms, rss)
+
+		cmdline := process.Cmdline()
+		fmt.Printf("Cmdline: %s\n", cmdline)
 	}
 }
