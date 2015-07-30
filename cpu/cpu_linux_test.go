@@ -10,8 +10,6 @@ import (
 
 func TestCpuTimes(t *testing.T) {
 
-	clock_ticks = GetClockTicks()
-
 	type io struct {
 		Input  string
 		Output CpuTimes
@@ -36,18 +34,18 @@ softirq 116034 0 58275 2182 32587 9080 0 1 0 683 13226`,
 			Output: CpuTimes{User: 22.26, System: 13.50, Idle: 10855.05, IOWait: 1.07, SoftIRQ: 1.38},
 		},
 	}
+	SetClockTicks(100)
 
 	for _, test := range tests {
-		res, err := parseCpuTimes([]byte(test.Input))
+		ct := CpuTimes{}
+		err := ct.parseCpuTimes([]byte(test.Input))
 		assert.Nil(t, err)
-		assert.Equal(t, test.Output, *res)
+		assert.Equal(t, test.Output, ct)
 	}
 
 }
 
 func TestCpuTimesPercent(t *testing.T) {
-
-	clock_ticks = GetClockTicks()
 
 	type io struct {
 		Input1 string
@@ -78,22 +76,24 @@ softirq 319545 0 194251 8181 63322 21065 0 1 0 1129 31596`,
 			Output: CpuTimes{Idle: 100.0},
 		},
 	}
+	SetClockTicks(100)
 
 	for _, test := range tests {
-		res1, err := parseCpuTimes([]byte(test.Input1))
+		ct1 := CpuTimes{}
+		ct2 := CpuTimes{}
+
+		err := ct1.parseCpuTimes([]byte(test.Input1))
 		assert.Nil(t, err)
 
-		res2, err := parseCpuTimes([]byte(test.Input2))
+		err = ct2.parseCpuTimes([]byte(test.Input2))
 		assert.Nil(t, err)
 
-		res := cpu_times_diff(res1, res2)
+		res := cpu_times_diff(&ct1, &ct2)
 		assert.Equal(t, test.Output, *res)
 	}
 
 }
 func TestCpuTimesError(t *testing.T) {
-
-	clock_ticks = GetClockTicks()
 
 	type io struct {
 		Input  string
@@ -109,7 +109,8 @@ softirq 116034 0 58275 2182 32587 9080 0 1 0 683 13226`,
 	}
 
 	for _, test := range tests {
-		_, err := parseCpuTimes([]byte(test.Input))
+		ct := CpuTimes{}
+		err := ct.parseCpuTimes([]byte(test.Input))
 		assert.NotNil(t, err)
 	}
 

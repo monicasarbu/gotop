@@ -3,6 +3,7 @@
 package mem
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -10,65 +11,67 @@ import (
 	"github.com/monicasarbu/gotop/common"
 )
 
+func (stat *MemStat) parseProcMemInfo(b []byte) error {
+
+	var all_errors []string
+
+	lines := strings.Split(string(b), "\n")
+
+	for _, line := range lines {
+
+		fields := strings.Fields(line)
+		if len(fields) != 3 {
+			all_errors = append(all_errors, fmt.Sprintf("ERR: Too few elements %d on a line", len(fields)))
+			continue
+		}
+
+		v, err := strconv.ParseUint(fields[1], 10, 64)
+		if err != nil {
+			all_errors = append(all_errors, err.Error())
+		} else {
+
+			switch fields[0] {
+
+			case "MemTotal:":
+				stat.Total = v
+			case "MemFree:":
+				stat.Free = v
+			case "Buffers:":
+				stat.Buffers = v
+			case "Cached:":
+				stat.Cached = v
+			case "Active:":
+				stat.Active = v
+			case "Inactive:":
+				stat.Inactive = v
+			}
+		}
+	}
+
+	stat.Available = stat.Free + stat.Buffers + stat.Cached
+	stat.Used = stat.Total - stat.Free
+	if stat.Total > 0 {
+		stat.Used_p = common.Round(float64(stat.Total-stat.Available) / float64(stat.Total))
+	}
+
+	if len(all_errors) > 0 {
+		return fmt.Errorf(strings.Join(all_errors, "; "))
+	}
+	return nil
+}
+
 func Virtual_memory() (*MemStat, error) {
+
+	stat := MemStat{}
 
 	b, err := ioutil.ReadFile("/proc/meminfo")
 	if err != nil {
 		return nil, err
 	}
 
-	lines := strings.Split(string(b), "\n")
-
-	stat := MemStat{}
-
-	for _, line := range lines {
-
-		fields := strings.Fields(line)
-		if len(fields) == 0 {
-			continue
-		}
-
-		switch fields[0] {
-
-		case "MemTotal:":
-			v, err := strconv.ParseUint(fields[1], 10, 64)
-			if err == nil {
-				stat.Total = v
-			}
-		case "MemFree:":
-			v, err := strconv.ParseUint(fields[1], 10, 64)
-			if err == nil {
-				stat.Free = v
-			}
-		case "Buffers:":
-			v, err := strconv.ParseUint(fields[1], 10, 64)
-			if err == nil {
-				stat.Buffers = v
-			}
-		case "Cached:":
-			v, err := strconv.ParseUint(fields[1], 10, 64)
-			if err == nil {
-				stat.Cached = v
-			}
-		case "Active:":
-			v, err := strconv.ParseUint(fields[1], 10, 64)
-			if err == nil {
-				stat.Active = v
-			}
-
-		case "Inactive:":
-			v, err := strconv.ParseUint(fields[1], 10, 64)
-			if err == nil {
-				stat.Inactive = v
-			}
-
-		}
+	err = stat.parseProcMemInfo(b)
+	if err != nil {
+		return nil, err
 	}
-
-	stat.Available = stat.Free + stat.Buffers + stat.Cached
-	stat.Used = stat.Total - stat.Free
-	stat.Used_p = common.Round(float64(stat.Total-stat.Available) / float64(stat.Total))
-
 	return &stat, nil
-
 }

@@ -2,22 +2,15 @@
 
 package proc
 
-import "github.com/monicasarbu/gotop/cpu"
+import (
+	"errors"
+)
 
 func Pids() []int32 {
 
 	return nil
 }
 
-func (p *Process) Name() string {
-	return ""
-}
-
-func (p *Process) Cpu_times() *cpu.CpuTimes {
-	return nil
-}
-
-func (p *Process) Memory_info() *MemoryInfoStat {
-
-	return nil
+func GetProcess(pid int32) (*Process, error) {
+	return nil, errors.New("not implemented")
 }

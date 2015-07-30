@@ -16,5 +16,5 @@ type MemStat struct {
 
 func (m *MemStat) String() string {
 
-	return fmt.Sprintf("%d total, %d used, %d free, %d buffers", m.Total, m.Used, m.Free, m.Buffers)
+	return fmt.Sprintf("%d total, %d used(%d%%), %d free, %d buffers", m.Total, m.Used, m.Used_p, m.Free, m.Buffers)
 }

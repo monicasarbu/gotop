@@ -3,6 +3,7 @@
 package proc
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -18,6 +19,8 @@ import (
 #include <stdlib.h>
 */
 import "C"
+
+var page_size uint64
 
 func isdigit(x string) (int32, bool) {
 
@@ -77,6 +80,10 @@ func (p *Process) parseProcStat(b []byte) error {
 
 	fields := strings.Fields(string(b))
 
+	if len(fields) != 52 {
+		return errors.New("Wrong size of the input")
+	}
+
 	for i, field := range fields {
 
 		switch i {
@@ -116,6 +123,34 @@ func (p *Process) parseProcStat(b []byte) error {
 			} else {
 				all_errors = append(all_errors, err.Error())
 			}
+		case 19:
+			// Number of threads in this process (since Linux 2.6).
+			// Before kernel 2.6, this field was hard coded to 0 as
+			// a placeholder for an earlier removed field.
+			n, err := strconv.Atoi(field)
+			if err != nil {
+				all_errors = append(all_errors, err.Error())
+			} else {
+				p.num_threads = int32(n)
+			}
+		case 22:
+			//Virtual memory size in bytes.
+			vsize, err := strconv.ParseUint(field, 10, 64)
+			if err != nil {
+				all_errors = append(all_errors, err.Error())
+			} else {
+				p.vsize = vsize / 1024 // in kB
+			}
+
+			// Resident Set Size: number of pages the process has
+			// in real memory.
+			rss, err := strconv.ParseUint(field, 10, 64)
+			if err != nil {
+				all_errors = append(all_errors, err.Error())
+			} else {
+				p.rss = rss * page_size / 1024 // in kB
+			}
+
 		}
 	}
 
@@ -127,8 +162,6 @@ func (p *Process) parseProcStat(b []byte) error {
 
 func (p *Process) LoadProcStat() error {
 
-	fmt.Printf("clock_ticks = %d", cpu.GetClockTicks())
-
 	fname := fmt.Sprintf("/proc/%d/stat", p.Pid)
 
 	b, err := ioutil.ReadFile(fname)
@@ -139,50 +172,54 @@ func (p *Process) LoadProcStat() error {
 	return p.parseProcStat(b)
 }
 
-func (p *Process) Ppid() int32 {
-	return p.ppid
+func GetProcess(pid int32) (*Process, error) {
+
+	process := &Process{Pid: pid}
+	err := process.LoadProcStat()
+	return process, err
 }
 
-func (p *Process) Name() string {
-	return p.name
+func (p *Process) parseProcStatM(b []byte) error {
+
+	var all_errors []string
+
+	fields := strings.Fields(string(b))
+
+	for i, field := range fields {
+
+		value, err := strconv.ParseUint(field, 10, 64)
+		if err != nil {
+			all_errors = append(all_errors, err.Error())
+		} else {
+			value = value * page_size / 1024 // in kB
+
+			switch i {
+			case 0:
+				//  total program size
+				p.vsize = value
+			case 1:
+				//resident set size
+				p.rss = value
+			}
+		}
+	}
+
+	if len(all_errors) > 0 {
+		return fmt.Errorf(strings.Join(all_errors, "; "))
+	}
+	return nil
 }
 
-func (p *Process) Cpu_times() (float64, float64) {
-	return p.utime, p.stime
-}
-
-func (p *Process) Status() string {
-	return p.state
-}
-
-func (p *Process) Memory_info() (uint64, uint64) {
-
-	pagesize := GetPageSize()
+func (p *Process) LoadProcStatM() error {
 
 	fname := fmt.Sprintf("/proc/%d/statm", p.Pid)
 
 	b, err := ioutil.ReadFile(fname)
 	if err != nil {
-		return 0, 0
-	}
-	fields := strings.Fields(string(b))
-	if len(fields) > 2 {
-		vms, err := strconv.Atoi(fields[0])
-		if err != nil {
-			return 0, 0
-		}
-		p.vms = uint64(vms) / pagesize
-
-		rss, err := strconv.Atoi(fields[1])
-		if err != nil {
-			return 0, 0
-		}
-		p.rss = uint64(rss) / pagesize
-
-		return p.vms, p.rss
+		return err
 	}
 
-	return 0, 0
+	return p.parseProcStatM(b)
 }
 
 func (p *Process) Cmdline() string {
@@ -196,13 +233,17 @@ func (p *Process) Cmdline() string {
 	return ""
 }
 
-func (p *Process) String() string {
-
-	return fmt.Sprintf("pid=%d, ppid=%d, name=%s, state=%s, vms=%v, rss=%v, utime=%.2f, stime=%.2f", p.Pid, p.ppid, p.name, p.state, p.vms, p.rss, p.utime, p.stime)
+func InitPageSize() {
+	var sc_page_size C.long
+	sc_page_size = C.sysconf(C._SC_PAGE_SIZE)
+	page_size = uint64(sc_page_size)
 }
 
-func GetPageSize() uint64 {
-	var pagesize C.long
-	pagesize = C.sysconf(C._SC_PAGE_SIZE)
-	return uint64(pagesize)
+func SetPageSize(size uint64) {
+	// used by the unit tests
+	page_size = size
+}
+
+func init() {
+	InitPageSize()
 }
