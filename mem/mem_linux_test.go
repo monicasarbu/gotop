@@ -33,12 +33,10 @@ Unevictable:           0 kB`,
 		},
 	}
 
-	stat := MemStat{}
-
 	for _, test := range tests {
-		err := stat.parseProcMemInfo([]byte(test.Input))
+		stat, err := parseProcMemInfo([]byte(test.Input))
 		assert.Nil(t, err)
-		assert.Equal(t, test.Output, stat)
+		assert.Equal(t, test.Output, *stat)
 	}
 
 }

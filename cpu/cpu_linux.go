@@ -4,7 +4,6 @@ package cpu
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -24,76 +23,66 @@ type ClockTicks struct {
 
 var clock_ticks *ClockTicks
 
-func (ct *CpuTimes) parseCpuTimes(b []byte) error {
+func parseCpuTimes(b []byte) (*CpuTimes, error) {
 
-	var all_errors []string
+	ct := CpuTimes{}
 
 	lines := strings.Split(string(b), "\n")
 
 	if len(lines) == 0 {
-		return errors.New("Empty input")
+		return nil, errors.New("Empty input")
 	}
 
 	// parse the first line that contains combined CPU usage info
 	fields := strings.Fields(lines[0])
 	if len(fields) != 11 {
-		return errors.New("cpu line input too short.")
+		return nil, errors.New("cpu line input too short.")
 	}
 
 	if fields[0] == "cpu" {
 		for i := 1; i < len(fields); i++ {
+
 			v, err := strconv.ParseUint(fields[i], 10, 64)
 			if err != nil {
-				all_errors = append(all_errors, err.Error())
-			} else {
+				return nil, err
+			}
 
-				switch i {
-				case 1:
-					ct.User = float64(v) / GetClockTicks()
-				case 2:
-					ct.Nice = float64(v) / GetClockTicks()
-				case 3:
-					ct.System = float64(v) / GetClockTicks()
-				case 4:
-					ct.Idle = float64(v) / GetClockTicks()
-				case 5:
-					ct.IOWait = float64(v) / GetClockTicks()
-				case 6:
-					ct.IRQ = float64(v) / GetClockTicks()
-				case 7:
-					ct.SoftIRQ = float64(v) / GetClockTicks()
-				case 8:
-					ct.Steal = float64(v) / GetClockTicks()
-				case 9:
-					ct.Guest = float64(v) / GetClockTicks()
-				case 10:
-					ct.GuestNice = float64(v) / GetClockTicks()
-				}
+			switch i {
+			case 1:
+				ct.User = float64(v) / GetClockTicks()
+			case 2:
+				ct.Nice = float64(v) / GetClockTicks()
+			case 3:
+				ct.System = float64(v) / GetClockTicks()
+			case 4:
+				ct.Idle = float64(v) / GetClockTicks()
+			case 5:
+				ct.IOWait = float64(v) / GetClockTicks()
+			case 6:
+				ct.IRQ = float64(v) / GetClockTicks()
+			case 7:
+				ct.SoftIRQ = float64(v) / GetClockTicks()
+			case 8:
+				ct.Steal = float64(v) / GetClockTicks()
+			case 9:
+				ct.Guest = float64(v) / GetClockTicks()
+			case 10:
+				ct.GuestNice = float64(v) / GetClockTicks()
 			}
 		}
 
-	} else {
-		all_errors = append(all_errors, "Wrong input data")
 	}
-
-	if len(all_errors) > 0 {
-		return fmt.Errorf(strings.Join(all_errors, "; "))
-	}
-
-	return nil
+	return &ct, nil
 }
 
 func Cpu_times() (*CpuTimes, error) {
-
-	stat := CpuTimes{}
 
 	b, err := ioutil.ReadFile("/proc/stat")
 	if err != nil {
 		return nil, err
 	}
 
-	stat.parseCpuTimes(b)
-	return &stat, nil
+	return parseCpuTimes(b)
 }
 
 func InitClockTicks() {

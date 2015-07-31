@@ -76,8 +76,6 @@ func (p *Process) parseProcState(s string) string {
 
 func (p *Process) parseProcStat(b []byte) error {
 
-	var all_errors []string
-
 	fields := strings.Fields(string(b))
 
 	if len(fields) != 52 {
@@ -92,71 +90,68 @@ func (p *Process) parseProcStat(b []byte) error {
 		case 1:
 			// process name
 			p.name = strings.Trim(field, "()")
+
 		case 2:
 			// process state
 			p.state = p.parseProcState(field)
+
 		case 3:
 			// ppid
 			ppid, err := strconv.Atoi(field)
-			if err == nil {
-				p.ppid = int32(ppid)
-			} else {
-				all_errors = append(all_errors, err.Error())
+			if err != nil {
+				return err
 			}
+			p.ppid = int32(ppid)
+
 		case 13:
 			// utime: Amount of time that this process has been scheduled
 			// in user mode, measured in clock ticks (divide by
 			// sysconf(_SC_CLK_TCK)).
 			utime, err := strconv.ParseFloat(field, 64)
-			if err == nil {
-				p.utime = utime / cpu.GetClockTicks()
-			} else {
-				all_errors = append(all_errors, err.Error())
+			if err != nil {
+				return err
 			}
+			p.utime = utime / cpu.GetClockTicks()
+
 		case 14:
 			//stime: Amount of time that this process has been scheduled
 			// in kernel mode, measured in clock ticks (divide by
 			// sysconf(_SC_CLK_TCK)).
 			stime, err := strconv.ParseFloat(field, 64)
-			if err == nil {
-				p.stime = stime / cpu.GetClockTicks()
-			} else {
-				all_errors = append(all_errors, err.Error())
+			if err != nil {
+				return err
 			}
+			p.stime = stime / cpu.GetClockTicks()
+
 		case 19:
 			// Number of threads in this process (since Linux 2.6).
 			// Before kernel 2.6, this field was hard coded to 0 as
 			// a placeholder for an earlier removed field.
 			n, err := strconv.Atoi(field)
 			if err != nil {
-				all_errors = append(all_errors, err.Error())
-			} else {
-				p.num_threads = int32(n)
+				return err
 			}
+			p.num_threads = int32(n)
+
 		case 22:
 			//Virtual memory size in bytes.
 			vsize, err := strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				all_errors = append(all_errors, err.Error())
-			} else {
-				p.vsize = vsize / 1024 // in kB
+				return err
 			}
+			p.vsize = vsize / 1024 // in kB
 
+		case 23:
 			// Resident Set Size: number of pages the process has
 			// in real memory.
 			rss, err := strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				all_errors = append(all_errors, err.Error())
-			} else {
-				p.rss = rss * page_size / 1024 // in kB
+				return err
 			}
-
+			p.rss = rss * page_size / 1024 // in kB
 		}
 	}
 
-	if len(all_errors) > 0 {
-		return fmt.Errorf(strings.Join(all_errors, "; "))
-	}
 	return nil
 }
 
@@ -181,32 +176,27 @@ func GetProcess(pid int32) (*Process, error) {
 
 func (p *Process) parseProcStatM(b []byte) error {
 
-	var all_errors []string
-
 	fields := strings.Fields(string(b))
 
 	for i, field := range fields {
 
 		value, err := strconv.ParseUint(field, 10, 64)
 		if err != nil {
-			all_errors = append(all_errors, err.Error())
-		} else {
-			value = value * page_size / 1024 // in kB
+			return err
+		}
 
-			switch i {
-			case 0:
-				//  total program size
-				p.vsize = value
-			case 1:
-				//resident set size
-				p.rss = value
-			}
+		value = value * page_size / 1024 // in kB
+
+		switch i {
+		case 0:
+			//  total program size
+			p.vsize = value
+		case 1:
+			//resident set size
+			p.rss = value
 		}
 	}
 
-	if len(all_errors) > 0 {
-		return fmt.Errorf(strings.Join(all_errors, "; "))
-	}
 	return nil
 }
 

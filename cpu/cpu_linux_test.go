@@ -37,10 +37,9 @@ softirq 116034 0 58275 2182 32587 9080 0 1 0 683 13226`,
 	SetClockTicks(100)
 
 	for _, test := range tests {
-		ct := CpuTimes{}
-		err := ct.parseCpuTimes([]byte(test.Input))
+		ct, err := parseCpuTimes([]byte(test.Input))
 		assert.Nil(t, err)
-		assert.Equal(t, test.Output, ct)
+		assert.Equal(t, test.Output, *ct)
 	}
 
 }
@@ -79,16 +78,13 @@ softirq 319545 0 194251 8181 63322 21065 0 1 0 1129 31596`,
 	SetClockTicks(100)
 
 	for _, test := range tests {
-		ct1 := CpuTimes{}
-		ct2 := CpuTimes{}
-
-		err := ct1.parseCpuTimes([]byte(test.Input1))
+		ct1, err := parseCpuTimes([]byte(test.Input1))
 		assert.Nil(t, err)
 
-		err = ct2.parseCpuTimes([]byte(test.Input2))
+		ct2, err := parseCpuTimes([]byte(test.Input2))
 		assert.Nil(t, err)
 
-		res := cpu_times_diff(&ct1, &ct2)
+		res := cpu_times_diff(ct1, ct2)
 		assert.Equal(t, test.Output, *res)
 	}
 
@@ -109,8 +105,7 @@ softirq 116034 0 58275 2182 32587 9080 0 1 0 683 13226`,
 	}
 
 	for _, test := range tests {
-		ct := CpuTimes{}
-		err := ct.parseCpuTimes([]byte(test.Input))
+		_, err := parseCpuTimes([]byte(test.Input))
 		assert.NotNil(t, err)
 	}
 

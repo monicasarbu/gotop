@@ -3,7 +3,7 @@
 package mem
 
 import (
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -11,9 +11,9 @@ import (
 	"github.com/monicasarbu/gotop/common"
 )
 
-func (stat *MemStat) parseProcMemInfo(b []byte) error {
+func parseProcMemInfo(b []byte) (*MemStat, error) {
 
-	var all_errors []string
+	stat := MemStat{}
 
 	lines := strings.Split(string(b), "\n")
 
@@ -21,30 +21,28 @@ func (stat *MemStat) parseProcMemInfo(b []byte) error {
 
 		fields := strings.Fields(line)
 		if len(fields) != 3 {
-			all_errors = append(all_errors, fmt.Sprintf("ERR: Too few elements %d on a line", len(fields)))
-			continue
+			return nil, errors.New("ERR: Too few elements on a line")
 		}
 
 		v, err := strconv.ParseUint(fields[1], 10, 64)
 		if err != nil {
-			all_errors = append(all_errors, err.Error())
-		} else {
+			return nil, err
+		}
 
-			switch fields[0] {
+		switch fields[0] {
 
-			case "MemTotal:":
-				stat.Total = v
-			case "MemFree:":
-				stat.Free = v
-			case "Buffers:":
-				stat.Buffers = v
-			case "Cached:":
-				stat.Cached = v
-			case "Active:":
-				stat.Active = v
-			case "Inactive:":
-				stat.Inactive = v
-			}
+		case "MemTotal:":
+			stat.Total = v
+		case "MemFree:":
+			stat.Free = v
+		case "Buffers:":
+			stat.Buffers = v
+		case "Cached:":
+			stat.Cached = v
+		case "Active:":
+			stat.Active = v
+		case "Inactive:":
+			stat.Inactive = v
 		}
 	}
 
@@ -54,24 +52,15 @@ func (stat *MemStat) parseProcMemInfo(b []byte) error {
 		stat.Used_p = common.Round(float64(stat.Total-stat.Available) / float64(stat.Total))
 	}
 
-	if len(all_errors) > 0 {
-		return fmt.Errorf(strings.Join(all_errors, "; "))
-	}
-	return nil
+	return &stat, nil
 }
 
 func Virtual_memory() (*MemStat, error) {
-
-	stat := MemStat{}
 
 	b, err := ioutil.ReadFile("/proc/meminfo")
 	if err != nil {
 		return nil, err
 	}
 
-	err = stat.parseProcMemInfo(b)
-	if err != nil {
-		return nil, err
-	}
-	return &stat, nil
+	return parseProcMemInfo(b)
 }
