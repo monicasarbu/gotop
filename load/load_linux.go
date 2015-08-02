@@ -13,7 +13,7 @@ func parseLoadAvg(b []byte) (*LoadStat, error) {
 
 	fields := strings.Fields(string(b))
 	if len(fields) < 3 {
-		return nil, errors.New("Invalid input")
+		return nil, errors.New("Invalid /proc/loadavg input")
 	}
 
 	l1, err := strconv.ParseFloat(fields[0], 64)

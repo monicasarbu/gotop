@@ -36,7 +36,7 @@ func parseCpuTimes(b []byte) (*CpuTimes, error) {
 	// parse the first line that contains combined CPU usage info
 	fields := strings.Fields(lines[0])
 	if len(fields) != 11 {
-		return nil, errors.New("cpu line input too short.")
+		return nil, errors.New("Invalid /proc/stat input")
 	}
 
 	if fields[0] == "cpu" {

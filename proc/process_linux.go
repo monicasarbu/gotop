@@ -79,7 +79,7 @@ func (p *Process) parseProcStat(b []byte) error {
 	fields := strings.Fields(string(b))
 
 	if len(fields) != 52 {
-		return errors.New("Wrong size of the input")
+		return errors.New("Invalid /proc/[pid]/stat input")
 	}
 
 	for i, field := range fields {
@@ -89,11 +89,11 @@ func (p *Process) parseProcStat(b []byte) error {
 			// skip pid
 		case 1:
 			// process name
-			p.name = strings.Trim(field, "()")
+			p.Name = strings.Trim(field, "()")
 
 		case 2:
 			// process state
-			p.state = p.parseProcState(field)
+			p.State = p.parseProcState(field)
 
 		case 3:
 			// ppid
@@ -101,7 +101,7 @@ func (p *Process) parseProcStat(b []byte) error {
 			if err != nil {
 				return err
 			}
-			p.ppid = int32(ppid)
+			p.Ppid = int32(ppid)
 
 		case 13:
 			// utime: Amount of time that this process has been scheduled
@@ -111,7 +111,7 @@ func (p *Process) parseProcStat(b []byte) error {
 			if err != nil {
 				return err
 			}
-			p.utime = utime / cpu.GetClockTicks()
+			p.Utime = utime / cpu.GetClockTicks()
 
 		case 14:
 			//stime: Amount of time that this process has been scheduled
@@ -121,7 +121,7 @@ func (p *Process) parseProcStat(b []byte) error {
 			if err != nil {
 				return err
 			}
-			p.stime = stime / cpu.GetClockTicks()
+			p.Stime = stime / cpu.GetClockTicks()
 
 		case 19:
 			// Number of threads in this process (since Linux 2.6).
@@ -131,7 +131,7 @@ func (p *Process) parseProcStat(b []byte) error {
 			if err != nil {
 				return err
 			}
-			p.num_threads = int32(n)
+			p.NumThreads = int32(n)
 
 		case 22:
 			//Virtual memory size in bytes.
@@ -139,7 +139,7 @@ func (p *Process) parseProcStat(b []byte) error {
 			if err != nil {
 				return err
 			}
-			p.vsize = vsize / 1024 // in kB
+			p.Vsize = vsize / 1024 // in kB
 
 		case 23:
 			// Resident Set Size: number of pages the process has
@@ -148,7 +148,7 @@ func (p *Process) parseProcStat(b []byte) error {
 			if err != nil {
 				return err
 			}
-			p.rss = rss * page_size / 1024 // in kB
+			p.Rss = rss * page_size / 1024 // in kB
 		}
 	}
 
@@ -190,10 +190,10 @@ func (p *Process) parseProcStatM(b []byte) error {
 		switch i {
 		case 0:
 			//  total program size
-			p.vsize = value
+			p.Vsize = value
 		case 1:
 			//resident set size
-			p.rss = value
+			p.Rss = value
 		}
 	}
 

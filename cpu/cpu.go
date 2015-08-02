@@ -8,16 +8,16 @@ import (
 )
 
 type CpuTimes struct {
-	User      float64
-	Nice      float64
-	System    float64
-	Idle      float64
-	IOWait    float64
-	IRQ       float64
-	SoftIRQ   float64
-	Steal     float64
-	Guest     float64
-	GuestNice float64
+	User      float64 `json:"user"`
+	Nice      float64 `json:"nice"`
+	System    float64 `json:"system"`
+	Idle      float64 `json:"idle"`
+	IOWait    float64 `json:"iowait"`
+	IRQ       float64 `json:"irq"`
+	SoftIRQ   float64 `json:"softirq"`
+	Steal     float64 `json:"steal"`
+	Guest     float64 `json:"guest"`
+	GuestNice float64 `json:"guestnice"`
 }
 
 var _last_cpu_times *CpuTimes

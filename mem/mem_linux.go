@@ -4,6 +4,7 @@ package mem
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -18,10 +19,13 @@ func parseProcMemInfo(b []byte) (*MemStat, error) {
 	lines := strings.Split(string(b), "\n")
 
 	for _, line := range lines {
-
+		if len(line) == 0 {
+			// ignore empty lines
+			continue
+		}
 		fields := strings.Fields(line)
-		if len(fields) != 3 {
-			return nil, errors.New("ERR: Too few elements on a line")
+		if len(fields) < 2 {
+			return nil, errors.New(fmt.Sprintf("Invalid input line %s: %q", line, fields))
 		}
 
 		v, err := strconv.ParseUint(fields[1], 10, 64)
